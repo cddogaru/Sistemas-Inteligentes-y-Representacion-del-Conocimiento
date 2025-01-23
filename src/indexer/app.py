@@ -1,5 +1,4 @@
 from argparse import ArgumentParser
-
 from .indexer import Indexer
 
 
@@ -18,7 +17,6 @@ def parse_args():
         type=str,
         default="etc/webpages",
         help="Carpeta que contiene los ficheros con el contenido de las URL",
-        required=False,
     )
 
     parser.add_argument(
@@ -29,8 +27,6 @@ def parse_args():
         required=True,
     )
 
-    # Añade aquí cualquier otro argumento que condicione
-    # el funcionamiento del indexer
     return parser.parse_args()
 
 
