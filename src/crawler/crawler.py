@@ -5,6 +5,7 @@ import os
 import requests
 import json
 import re
+from bs4 import BeautifulSoup  # Añadido para extraer solo el texto útil
 
 
 class Crawler:
@@ -43,18 +44,34 @@ class Crawler:
                 print(f"Error al obtener {current_url}: {e}")
                 continue
 
-            # Guarda el contenido de la página en un archivo
-            content = response.text
-            self.save_page(current_url, content)
+            # Extrae solo el texto relevante de la página
+            parsed_text = self.extract_text(response.text)
+            if not parsed_text:
+                continue
+
+            # Guarda el contenido de la página en un archivo JSON
+            self.save_page(current_url, parsed_text)
 
             # Marca la URL como visitada
             self.visited.add(current_url)
             crawled_count += 1
 
             # Extrae las URLs y las agrega a la cola
-            for url in self.find_urls(content):
+            for url in self.find_urls(response.text):
                 if url not in self.visited:
                     queue.put(url)
+
+    def extract_text(self, html: str) -> str:
+        """Extrae solo el texto relevante del HTML usando BeautifulSoup."""
+        soup = BeautifulSoup(html, "html.parser")
+        
+        # Intentar encontrar contenido principal
+        content = soup.find("div", class_="page")
+        if content:
+            return " ".join(tag.text for tag in content.find_all(["h1", "h2", "p", "a", "b", "i"]))
+        
+        # Si no hay un div específico, extraer todo el texto visible
+        return soup.get_text(separator=" ").strip()
 
     def save_page(self, url: str, content: str) -> None:
         """
@@ -73,6 +90,6 @@ class Crawler:
         Encuentra URLs en el texto de una web.
         """
         # Expresión regular para encontrar URLs con "href" que comiencen con "https://universidadeuropea.com"
-        href_pattern = r'href=["\'](https://universidadeuropea\.com[^\s"\'<>]*)["\']'
+        href_pattern = r'href=["\'](https?:\/\/universidadeuropea\.com[^\s"\'<>]*)["\']'
         urls = re.findall(href_pattern, text)
         return set(urls)  # Devuelve un conjunto con URLs únicas
